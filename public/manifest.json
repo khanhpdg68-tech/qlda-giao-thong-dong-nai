@@ -1,0 +1,18 @@
+{
+  "name": "UBND TP Đồng Nai - Ban QLDA ĐTXD Công Trình Giao Thông",
+  "short_name": "Ban QLDA Đồng Nai",
+  "description": "Hệ thống Quản lý Đấu thầu, Giám sát Tiến độ và Hợp đồng Xây dựng Công trình Giao thông",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

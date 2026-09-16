@@ -1,0 +1,155 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. DỰ ÁN
+model Project {
+  id                String           @id @default(uuid())
+  projectCode       String           @unique // Mã dự án (VD: "DA-GT-2026-01")
+  projectName       String           // Tên dự án
+  approvalDecision  String           // Số, ngày QĐ phê duyệt (VD: "1234/QĐ-UBND ngày 15/01/2026")
+  legalDriveUrl     String?          // Link Google Drive hồ sơ pháp lý
+  legalFileUrl      String?          // Đường dẫn tệp tải trực tiếp (PDF/Word)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  biddingPackages   BiddingPackage[]
+  contracts         Contract[]
+}
+
+// 2. GÓI THẦU / ĐẤU THẦU
+model BiddingPackage {
+  id                       String    @id @default(uuid())
+  projectId                String
+  project                  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  packageName              String    // Tên gói thầu
+  packagePrice             Float     // Giá gói thầu phê duyệt (VNĐ)
+  procurementMethod        String    @default("OPEN_BIDDING") // Đấu thầu rộng rãi qua mạng, Chỉ định thầu, Chào hàng cạnh tranh...
+  selectionMethod          String    @default("ONE_STAGE_ONE_ENVELOPE") // 1 GĐ 1 túi hồ sơ, 1 GĐ 2 túi hồ sơ
+  khlcntDecision           String    // Số, ngày QĐ phê duyệt KHLCNT
+  khlcntFileUrl            String?   // Link tài liệu QĐ KHLCNT (Drive hoặc Upload)
+  hsmtPublishDate          DateTime  // Ngày đăng tải HSMT
+  bidCloseTime             DateTime  // Thời điểm đóng/mở thầu (ISO DateTime)
+  originalBidCloseTime     DateTime? // Thời điểm đóng thầu gốc (nếu có gia hạn đóng thầu)
+  extensionReason          String?   // Lý do gia hạn đóng thầu (nếu có)
+  kqlcntDecision           String?   // Số, ngày QĐ phê duyệt KQLCNT
+  kqlcntFileUrl            String?   // Link tài liệu QĐ KQLCNT
+  status                   String    @default("DRAFT") // DRAFT, PUBLISHED, BIDDING_CLOSED, EVALUATING, AWARDED, CANCELED, RE_BIDDING
+  isTransferredToContract  Boolean   @default(false)   // Đã chuyển sang Hợp đồng chưa
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  contract                 Contract?
+}
+
+// 3. HỢP ĐỒNG
+model Contract {
+  id                     String              @id @default(uuid())
+  packageId              String?             @unique
+  package                BiddingPackage?     @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  projectId              String
+  project                Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  packageName            String?             // Tên gói thầu / hợp đồng khi tạo trực tiếp (không qua đấu thầu)
+  packagePrice           Float?              // Giá dự toán gói thầu được duyệt ban đầu
+  adjustedPackagePrice   Float?              // Giá trị dự toán được duyệt điều chỉnh (VNĐ)
+  procurementMethod      String?             @default("DIRECT_AWARD")
+  contractorName         String              // Nhà thầu / Liên danh trúng thầu cuối cùng
+  contractType           String              @default("LUMP_SUM") // Trọn gói, Đơn giá cố định, Đơn giá điều chỉnh, Kết hợp
+  contractPrice          Float               // Giá hợp đồng ban đầu (VNĐ)
+  adjustedContractPrice  Float?              // Giá hợp đồng sau các phụ lục điều chỉnh (VNĐ)
+  contractSigningDate    DateTime            // Ngày ký kết hợp đồng
+  durationDays           Int                 // Thời gian thực hiện (ngày)
+  originalEndDate        DateTime            // Ngày kết thúc theo HĐ gốc
+  
+  // Quản lý Bảo lãnh thực hiện Hợp đồng
+  guaranteeAmount        Float?              // Giá trị bảo lãnh thực hiện HĐ (VNĐ)
+  guaranteeType          String              @default("BY_DATE") // "BY_DATE" | "UNTIL_ACCEPTANCE"
+  guaranteeEndDate       DateTime?           // Ngày hết hạn bảo lãnh thực hiện HĐ (khi theo ngày)
+  guaranteeBank          String?             // Ngân hàng phát hành thư bảo lãnh
+  
+  status                 String              @default("ACTIVE") // ACTIVE, NEED_EXTENSION, EXTENDED, LIQUIDATED
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  addendums              ContractAddendum[]
+}
+
+// 4. PHỤ LỤC HỢP ĐỒNG (Lưu vết kiểm toán đa loại hình)
+model ContractAddendum {
+  id              String    @id @default(uuid())
+  contractId      String
+  contract        Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  addendumNumber  String    // Số hiệu: PLHĐ 01, PLHĐ 02...
+  addendumType    String    @default("TIME_EXTENSION") // TIME_EXTENSION (Gia hạn thời gian), PRICE_ADJUSTMENT (Điều chỉnh giá), BOTH, OTHER
+  signingDate     DateTime  // Ngày ký phụ lục
+  extendedDays    Int       @default(0) // Số ngày gia hạn thêm (0 nếu không gia hạn thời gian)
+  newEndDate      DateTime? // Ngày kết thúc mới
+  adjustedAmount  Float?    // Giá trị tăng/giảm trong phụ lục (VNĐ)
+  reason          String    // Lý do (GPMB, thay đổi thiết kế, thời tiết, phát sinh khối lượng...)
+  fileUrl         String?   // Đường dẫn tệp hoặc link Drive scan phụ lục
+  createdAt       DateTime  @default(now())
+}
+
+// 5. NHẬT KÝ CẢNH BÁO EMAIL
+model NotificationLog {
+  id          String   @id @default(uuid())
+  type        String   // "BIDDING_CLOSE" | "CONTRACT_EXTENSION" | "GUARANTEE_EXPIRATION" | "TEST_EMAIL"
+  recipient   String   // Mặc định: khanhpdg68@gmail.com
+  title       String
+  content     String
+  status      String   // "SUCCESS" | "FAILED"
+  error       String?
+  sentAt      DateTime @default(now())
+}
+
+// 6. CẤU HÌNH HỆ THỐNG
+model SystemConfig {
+  id                  String   @id @default("default")
+  alertEmail          String   @default("khanhpdg68@gmail.com")
+  biddingAlertHours   Int      @default(6)
+  contractAlertDays   Int      @default(15)
+  guaranteeAlertDays  Int      @default(30)
+  geminiApiKey        String?
+  updatedAt           DateTime @updatedAt
+}
+
+// 7. KẾ HOẠCH LÀM VIỆC CÁ NHÂN
+model WorkPlan {
+  id          String   @id @default(uuid())
+  title       String   // Tiêu đề công việc / sự kiện
+  date        DateTime // Ngày làm việc
+  startTime   String?  // Giờ bắt đầu (VD: "08:30")
+  endTime     String?  // Giờ kết thúc (VD: "11:30")
+  isAllDay    Boolean  @default(false)
+  category    String   @default("MEETING") // MEETING, INSPECTION, URGENT, REMINDER, BUSINESS_TRIP, OTHER
+  location    String?  // Địa điểm, phòng họp, hiện trường
+  notes       String?  // Ghi chú chi tiết, nội dung chuẩn bị
+  isCompleted Boolean  @default(false) // Trạng thái hoàn thành
+  priority    String   @default("NORMAL") // URGENT, IMPORTANT, NORMAL
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 8. ĐĂNG KÝ THÔNG BÁO ĐẨY ĐIỆN THOẠI (WEB PUSH)
+model PushSubscription {
+  id        String   @id @default(uuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 9. LỊCH SỬ CHAT TRỢ LÝ AI
+model ChatMessage {
+  id        String   @id @default(uuid())
+  role      String   // "user" | "assistant" | "system"
+  content   String
+  action    String?  // "CREATE_SCHEDULE" | "CREATE_PACKAGE" | "QUERY" | null
+  metadata  String?  // JSON data
+  createdAt DateTime @default(now())
+}
+
