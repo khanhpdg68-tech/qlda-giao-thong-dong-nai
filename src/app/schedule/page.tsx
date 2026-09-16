@@ -16,7 +16,7 @@ import {
   Filter,
   RefreshCw,
   Send,
-  Mail,
+  Smartphone,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -106,10 +106,10 @@ export default function SchedulePage() {
     priority: 'NORMAL',
   });
 
-  // Cảnh báo hệ thống & Email state
+  // Cảnh báo hệ thống & Thông báo đẩy Điện thoại state
   const [systemAlerts, setSystemAlerts] = useState<SystemAlertSummary>({ urgentBidding: [], urgentContracts: [] });
-  const [testingEmail, setTestingEmail] = useState(false);
-  const [emailStatusMessage, setEmailStatusMessage] = useState<{ text: string; success: boolean } | null>(null);
+  const [testingPush, setTestingPush] = useState(false);
+  const [pushStatusMessage, setPushStatusMessage] = useState<{ text: string; success: boolean } | null>(null);
 
   // Tải danh sách kế hoạch làm việc
   const fetchWorkPlans = async () => {
@@ -307,31 +307,31 @@ export default function SchedulePage() {
     }
   };
 
-  // Gửi email thử nghiệm
-  const handleSendTestEmail = async () => {
-    setTestingEmail(true);
-    setEmailStatusMessage(null);
+  // Phát thử thông báo đẩy về điện thoại
+  const handleSendTestPush = async () => {
+    setTestingPush(true);
+    setPushStatusMessage(null);
     try {
-      const res = await fetch('/api/cron/test-email', { method: 'POST' });
+      const res = await fetch('/api/push/test', { method: 'POST' });
       const data = await res.json();
       if (res.ok && data.success) {
-        setEmailStatusMessage({
-          text: '✓ Đã gửi email thành công! Quý khách vui lòng kiểm tra hộp thư khanhpdg68@gmail.com.',
+        setPushStatusMessage({
+          text: `✓ ${data.message || 'Đã phát cảnh báo đẩy thành công! Điện thoại của Quý khách sẽ rung chuông ngay bây giờ.'}`,
           success: true,
         });
       } else {
-        setEmailStatusMessage({
-          text: data.error || data.message || 'Lỗi khi gửi email thử nghiệm',
+        setPushStatusMessage({
+          text: data.message || data.error || 'Chưa có thiết bị nào kích hoạt nhận thông báo. Quý khách vui lòng bấm "Bật Thông Báo Ngay" trên điện thoại.',
           success: false,
         });
       }
     } catch {
-      setEmailStatusMessage({
-        text: 'Không thể kết nối máy chủ gửi email',
+      setPushStatusMessage({
+        text: 'Không thể kết nối máy chủ thông báo',
         success: false,
       });
     } finally {
-      setTestingEmail(false);
+      setTestingPush(false);
     }
   };
 
@@ -835,53 +835,53 @@ export default function SchedulePage() {
           )}
         </div>
 
-        {/* CỘT PHỤ (4 CỘT HOẶC 3 CỘT): MỐC CẢNH BÁO HỆ THỐNG & EMAIL (THAY THẾ TRUNG TÂM CẢNH BÁO) */}
+        {/* CỘT PHỤ (4 CỘT HOẶC 3 CỘT): MỐC CẢNH BÁO HỆ THỐNG & DI ĐỘNG (THAY THẾ TRUNG TÂM CẢNH BÁO) */}
         <div className="lg:col-span-4 xl:col-span-3 space-y-4">
-          {/* KHỐI 1: TÌNH TRẠNG EMAIL CẢNH BÁO */}
-          <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-4 shadow-md space-y-3 border border-indigo-900">
+          {/* KHỐI 1: TÌNH TRẠNG CẢNH BÁO ĐẨY DI ĐỘNG (PUSH NOTIFICATIONS) */}
+          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-md space-y-3 border border-indigo-900/60">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Cảnh Báo Qua Email</span>
+                <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Cảnh Báo Đẩy Điện Thoại</span>
               </span>
               <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                <Check className="w-3 h-3" /> Đã kết nối
+                <Check className="w-3 h-3" /> Trực Tuyến 24/7
               </span>
             </div>
 
             <div className="text-xs space-y-1">
               <p className="text-slate-300">
-                Hòm thư nhận: <strong className="text-white">khanhpdg68@gmail.com</strong>
+                Kênh nhận: <strong className="text-white">Thiết bị Di động (PWA Push)</strong>
               </p>
               <p className="text-[11px] text-slate-400">
-                Máy chủ gửi: Gmail SMTP (Đã xác thực App Password)
+                Cơ chế: Rung chuông cảnh báo Gói thầu ≤ 6h hoặc Hợp đồng ≤ 15 ngày
               </p>
             </div>
 
-            {emailStatusMessage && (
+            {pushStatusMessage && (
               <div
                 className={`p-2 rounded-lg text-xs font-medium ${
-                  emailStatusMessage.success
+                  pushStatusMessage.success
                     ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40'
                     : 'bg-rose-500/20 text-rose-200 border border-rose-500/40'
                 }`}
               >
-                {emailStatusMessage.text}
+                {pushStatusMessage.text}
               </div>
             )}
 
             <button
               type="button"
-              disabled={testingEmail}
-              onClick={handleSendTestEmail}
+              disabled={testingPush}
+              onClick={handleSendTestPush}
               className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors shadow-sm disabled:opacity-50"
             >
-              {testingEmail ? (
+              {testingPush ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Send className="w-3.5 h-3.5" />
+                <BellRing className="w-3.5 h-3.5" />
               )}
-              <span>Gửi Thư Thử Nghiệm Ngay</span>
+              <span>Phát Thử Thông Báo Đẩy Rung Chuông</span>
             </button>
           </div>
 

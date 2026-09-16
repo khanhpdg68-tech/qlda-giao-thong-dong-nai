@@ -13,7 +13,7 @@ self.addEventListener('push', (event) => {
   let data = {
     title: 'Ban QLDA Giao Thông',
     body: 'Có thông báo mới từ hệ thống quản lý',
-    icon: '/favicon.ico',
+    icon: '/icon-192.png',
     url: '/schedule',
   };
 
@@ -29,8 +29,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/favicon.ico',
-    badge: '/favicon.ico',
+    icon: data.icon || '/icon-192.png',
+    badge: '/icon-192.png',
     vibrate: [200, 100, 200, 100, 200], // Rung điện thoại
     data: {
       url: data.url || '/schedule',

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/logo.svg',
     shortcut: '/logo.svg',
-    apple: '/logo.svg',
+    apple: '/apple-touch-icon.png',
   },
 };
 
@@ -30,6 +30,7 @@ export default function RootLayout({
     <html lang="vi">
       <head>
         <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

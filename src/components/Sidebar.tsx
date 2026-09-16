@@ -167,8 +167,9 @@ export default function Sidebar({
           </span>
           <span className="text-[10px] text-slate-500 font-mono">24/7</span>
         </div>
-        <div className="text-[10px] text-slate-400 font-mono truncate">
-          Cảnh báo: <span className="text-indigo-300">khanhpdg68@gmail.com</span>
+        <div className="text-[10px] text-slate-400 font-medium truncate flex items-center gap-1">
+          <span>Thông báo đẩy:</span>
+          <span className="text-emerald-300 font-semibold">Đồng bộ Di Động 24/7</span>
         </div>
       </div>
     </div>

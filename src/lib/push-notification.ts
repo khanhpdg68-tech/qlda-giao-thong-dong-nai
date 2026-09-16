@@ -1,12 +1,20 @@
 import webPush from 'web-push';
 import { prisma } from './prisma';
 
-const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-const privateKey = process.env.VAPID_PRIVATE_KEY;
+const FALLBACK_VAPID_PUBLIC_KEY =
+  'BGq1NzmsGLTtXFenUIlSKBtyph2xyVabYBiSHDLfSnr6deM-_jUWF_84KTyGcFnCbs7cDbHqCBSVQcI2LE0gTas';
+const FALLBACK_VAPID_PRIVATE_KEY = 'afsia1n_GZC99DDi6zpGL5cAX7LR9BB-wjMjow30G24';
+
+const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || FALLBACK_VAPID_PUBLIC_KEY;
+const privateKey = process.env.VAPID_PRIVATE_KEY || FALLBACK_VAPID_PRIVATE_KEY;
 const subject = process.env.VAPID_SUBJECT || 'mailto:khanhpdg68@gmail.com';
 
 if (publicKey && privateKey) {
-  webPush.setVapidDetails(subject, publicKey, privateKey);
+  try {
+    webPush.setVapidDetails(subject, publicKey, privateKey);
+  } catch (err) {
+    console.warn('Error setting VAPID details:', err);
+  }
 }
 
 interface PushPayload {
